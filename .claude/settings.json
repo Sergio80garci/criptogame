@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:docs.typesafe.ai)",
+      "WebFetch(domain:api.buda.com)",
+      "Bash(npx --yes create-next-app@latest . --typescript --app --eslint --no-tailwind --no-src-dir --import-alias \"@/*\" --use-npm)"
+    ]
+  }
+}
