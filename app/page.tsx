@@ -1,69 +1,44 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+import type { MarketSnapshot } from "./api/markets/route";
 
-export default function Home() {
+async function getMarkets(): Promise<MarketSnapshot[]> {
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000"}/api/markets`,
+    { cache: "no-store" }
+  );
+  const data = await res.json();
+  return data.markets ?? [];
+}
+
+export default async function Home() {
+  const markets = await getMarkets();
+
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className={styles.intro}>
-          <h1>
-            To get started, edit the{" "}
-            <code className={styles.code}>page.tsx</code> file.
-          </h1>
-          <p>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className={styles.secondary}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+    <main style={{ padding: 24, fontFamily: "monospace" }}>
+      <h1>Crypto Quest — verificación de datos Buda.com (CLP)</h1>
+      <table cellPadding={8} style={{ borderCollapse: "collapse" }}>
+        <thead>
+          <tr>
+            <th align="left">Mercado</th>
+            <th align="right">Último precio</th>
+            <th align="right">Var. 24h</th>
+            <th align="right">Var. 7d</th>
+            <th align="right">Volumen 24h</th>
+          </tr>
+        </thead>
+        <tbody>
+          {markets.map((m) => (
+            <tr key={m.marketId} style={{ borderTop: "1px solid #ccc" }}>
+              <td>{m.marketId}</td>
+              <td align="right">{m.lastPrice.toLocaleString("es-CL")}</td>
+              <td align="right">{(m.priceVariation24h * 100).toFixed(2)}%</td>
+              <td align="right">{(m.priceVariation7d * 100).toFixed(2)}%</td>
+              <td align="right">
+                {m.volume.toFixed(4)} {m.baseCurrency}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </main>
   );
 }

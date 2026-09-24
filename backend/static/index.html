@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Crypto Quest — panel de pruebas</title>
+<style>
+  :root {
+    --up: #1a7f37;
+    --up-light: #dafbe1;
+    --down: #cf222e;
+    --down-light: #ffebe9;
+    --neutral: #aab2bf;
+    --pending: #9a6700;
+    --pending-light: #fff8c5;
+    --ink: #f5f7fa;
+    --surface: #1c1f24;
+    --border: #42464f;
+    --content-width: 1000px;
+  }
+  body {
+    font-family: -apple-system, Segoe UI, sans-serif;
+    background: #101114;
+    color: var(--ink);
+    margin: 0;
+    padding: 24px;
+  }
+  h1 { font-size: 18px; margin-bottom: 4px; }
+  p.sub { color: var(--neutral); margin-top: 0; font-size: 13px; }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    max-width: var(--content-width);
+    background: var(--surface);
+  }
+  th, td {
+    padding: 10px 14px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    border-bottom: 1px solid var(--border);
+  }
+  th:first-child, td:first-child { text-align: left; }
+  th { background: #1c1f24; font-size: 12px; color: var(--neutral); text-transform: uppercase; }
+  .table-wrap {
+    overflow-x: auto;
+    max-width: var(--content-width);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+  .table-wrap table { max-width: none; }
+  a { color: var(--ink); }
+  .btn {
+    display: inline-block;
+    background: var(--surface);
+    color: var(--ink);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-family: inherit;
+    text-decoration: none;
+    cursor: pointer;
+    line-height: 1.3;
+  }
+  .btn:hover { border-color: var(--neutral); }
+  .btn:disabled { opacity: 0.5; cursor: default; }
+  #status.warning { color: #facc15; }
+  .badge.neutral { color: var(--ink); background: #42464f; }
+  tr:last-child td { border-bottom: none; }
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .badge.up { background: var(--up-light); color: var(--up); }
+  .badge.down { background: var(--down-light); color: var(--down); }
+  .badge.pending { background: var(--pending-light); color: var(--pending); }
+  #status { font-size: 12px; color: var(--neutral); margin-top: 12px; }
+  section { margin-top: 32px; }
+  h2 { font-size: 15px; margin-bottom: 4px; }
+  .disclaimer {
+    font-size: 12px;
+    color: var(--pending);
+    background: var(--pending-light);
+    border-radius: 6px;
+    padding: 8px 12px;
+    max-width: var(--content-width);
+    margin: 8px 0 12px;
+  }
+  select {
+    background: var(--surface);
+    color: var(--ink);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+  .badge.resolved-ok { background: var(--up-light); color: var(--up); }
+  .badge.resolved-fail { background: var(--down-light); color: var(--down); }
+  .controls-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 10px 0; }
+  .accuracy-text { font-size: 13px; color: var(--neutral); margin-top: 8px; white-space: pre-line; }
+  section p, .legend, .disclaimer { font-size: 13px; line-height: 1.5; }
+  .legend {
+    color: var(--neutral);
+    max-width: var(--content-width);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin: 10px 0;
+  }
+  .legend strong { color: var(--ink); }
+  .legend ul { margin: 6px 0 0; padding-left: 18px; }
+  .legend li { margin-bottom: 3px; }
+  button.save-inline {
+    background: var(--up);
+    color: #04120a;
+    border: none;
+    border-radius: 4px;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    min-width: 68px;
+  }
+  button.save-inline:disabled { opacity: 0.5; cursor: default; }
+  button.delete-btn { background: var(--down); color: #fff; }
+  #jev-counter { color: var(--neutral); }
+  .row-meta { font-size: 10px; color: var(--neutral); font-weight: 400; }
+  .dates-cell { font-size: 11px; line-height: 1.6; color: var(--neutral); white-space: nowrap; }
+  .history-table td, .history-table th { vertical-align: middle; }
+  .history-table td { padding-top: 12px; padding-bottom: 12px; }
+  .history-table th:nth-child(3), .history-table td:nth-child(3) { min-width: 220px; }
+  .price-line { font-size: 13px; }
+  .magnitude-line {
+    display: block;
+    margin-top: 4px;
+    font-size: 11px;
+    color: var(--neutral);
+    white-space: normal;
+    line-height: 1.4;
+  }
+  .magnitude-line .up { color: var(--up); }
+  .magnitude-line .down { color: var(--down); }
+  .conflict-flag { color: #facc15; font-weight: 600; cursor: help; }
+  .row-meta .up { color: var(--up); }
+  .row-meta .down { color: var(--down); }
+  td.flash { animation: flashChange 1.8s ease-out; border-radius: 4px; }
+  @keyframes flashChange {
+    0% { background-color: rgba(88, 166, 255, 0.45); }
+    100% { background-color: transparent; }
+  }
+  .collapsible { margin: 10px 0; }
+  .collapsible summary {
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--neutral);
+    padding: 6px 2px;
+    list-style: none;
+  }
+  .collapsible summary::-webkit-details-marker { display: none; }
+  .collapsible summary::before { content: "▸ "; }
+  .collapsible[open] summary::before { content: "▾ "; }
+  .collapsible[open] summary { color: var(--ink); }
+  .collapsible .disclaimer, .collapsible > p, .collapsible .info-block { margin-top: 14px; }
+  .info-block {
+    font-size: 13px;
+    color: var(--neutral);
+    max-width: var(--content-width);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+  }
+  .info-block > strong { display: block; color: var(--ink); margin-bottom: 6px; }
+  .info-block ul { margin: 0; padding-left: 18px; }
+  .info-block li { margin-bottom: 4px; }
+  .info-block li:last-child { margin-bottom: 0; }
+  .info-block p { margin: 0; }
+  body { max-width:1200px; margin:auto; padding:32px 24px; }
+  :root { --content-width:1200px; }
+  h1 { font-size:30px; letter-spacing:-.7px; margin:8px 0; }
+  h2 { font-size:20px; margin-top:0; }
+  section { padding:24px; border:1px solid var(--border); border-radius:14px; background:#16181c; }
+  .eyebrow { font-size:12px; letter-spacing:2px; color:var(--neutral); }
+  .overview { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin:24px 0; }
+  .metric { padding:20px; background:var(--surface); border:1px solid var(--border); border-radius:12px; }
+  .metric span,.metric small { display:block; color:var(--neutral); }
+  .metric strong { display:block; font-size:28px; margin:10px 0; }
+  .guide { border-left:3px solid #facc15; padding:12px 16px; background:#232218; color:#f8e7a0; line-height:1.6; }
+  .prediction-sentence { white-space:normal; min-width:220px; text-align:left; line-height:1.55; }
+  .prediction-sentence small { display:block; color:var(--neutral); margin-top:6px; }
+  .row-meta { font-size:12px; margin-top:5px; }
+  .controls-row select { min-height:40px; }
+  .btn { min-height:40px; }
+  #refresh-all-btn { background:#f5f7fa; color:#101114; font-weight:650; }
+  button.save-inline { color:white; padding:8px 12px; }
+  .magnitude-line .up,.row-meta .up { color:#bbf7d0; }
+  .magnitude-line .down,.row-meta .down { color:#fecaca; }
+  summary { cursor:pointer; }
+  :focus-visible { outline:2px solid #facc15; outline-offset:3px; }
+  @media(max-width:720px){body{padding:16px}section{padding:14px}.overview{grid-template-columns:1fr}h1{font-size:25px}.controls-row>*{max-width:100%}}
+</style>
+</head>
+<body>
+  <div class="eyebrow">CRYPTO QUEST / LABORATORIO CLP</div>
+  <h1>Qué espera Jev y qué ocurrió realmente</h1>
+  <p class="sub">Siete mercados de Buda. Predicciones experimentales y seguimiento de resultados.</p>
+  <div class="overview">
+    <div class="metric"><span>Mercados disponibles</span><strong id="metric-markets">— / 7</strong><small id="metric-market-note">Consultando Buda…</small></div>
+    <div class="metric"><span>Predicciones con plazo vigente</span><strong id="metric-active">—</strong><small id="metric-active-note">Consultando registros…</small></div>
+    <div class="metric"><span>Aciertos en el seguimiento</span><strong id="metric-accuracy">—</strong><small id="metric-accuracy-note">Consultando resultados…</small></div>
+  </div>
+  <p class="guide" id="next-step" role="status">Carga los registros para ver el estado. Actualizar precios no genera nuevas predicciones de Jev.</p>
+  <details style="margin: 16px 0">
+    <summary>Próxima vela · experimento BTC/CLP de 15 minutos</summary>
+    <p>Opción adicional con registro automático y evaluación de velas. Los siete mercados, sus horizontes y el seguimiento continúan abajo.</p>
+    <p><a href="/experiment">Abrir experimento en página completa</a></p>
+    <iframe src="/experiment" title="Experimento de próxima vela BTC/CLP" loading="lazy" style="width:100%;height:760px;border:1px solid var(--border);border-radius:8px"></iframe>
+  </details>
+  <p class="sub">API pública de Buda · Sin conexión a tu cuenta · Consulta cada 15 segundos. La hora indica consulta, no última transacción.
+    <span id="jev-counter" title="Cuántas veces se le preguntó a JEV en esta sesión del navegador (se reinicia al recargar la página)">· Llamadas a JEV esta sesión: 0</span>
+  </p>
+  <h2>1. Mercado actual</h2>
+  <p><button class="btn" id="refresh" type="button">Actualizar precios</button> <a class="btn" href="/docs">Explorar API</a></p>
+  <div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Mercado</th>
+        <th>Último precio</th>
+        <th>Var. 1h</th>
+        <th>Var. 4h</th>
+        <th>Var. 24h</th>
+        <th>Var. 7d</th>
+        <th>Volumen 24h</th>
+      </tr>
+    </thead>
+    <tbody id="rows">
+      <tr><td colspan="7"><span class="badge pending">cargando…</span></td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div id="status" role="status" aria-live="polite"></div>
+  <div id="next-refresh" class="accuracy-text"></div>
+
+  <section>
+    <h2>2. Predicción JEV — qué espera para cada mercado</h2>
+    <p>Genera estimaciones, revisa su fecha objetivo y pulsa <strong>Guardar</strong> para añadirlas al seguimiento. Los porcentajes son estimaciones del modelo, no aciertos comprobados.</p>
+
+    <p class="controls-row">
+      <select id="market-select" aria-label="Filtrar mercado">
+        <option value="">Todos los mercados</option>
+        <option value="BTC-CLP">BTC-CLP</option>
+        <option value="ETH-CLP">ETH-CLP</option>
+        <option value="BCH-CLP">BCH-CLP</option>
+        <option value="LTC-CLP">LTC-CLP</option>
+        <option value="USDC-CLP">USDC-CLP</option>
+        <option value="USDT-CLP">USDT-CLP</option>
+        <option value="SOL-CLP">SOL-CLP</option>
+      </select>
+      <select id="horizon-select" aria-label="Filtrar horizonte">
+        <option value="" id="horizon-all-option">Todos los horizontes</option>
+        <option value="1h">1 hora</option>
+        <option value="4h">4 horas</option>
+        <option value="24h">24 horas</option>
+        <option value="7d">7 días</option>
+      </select>
+      <button class="btn" id="refresh-all-btn" type="button">Predecir los 7 mercados (1h, 4h, 24h y 7d)</button>
+      <button class="btn" id="download-csv-btn" type="button">Descargar CSV</button>
+      <span id="predict-status"></span>
+    </p>
+
+    <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Mercado</th>
+          <th>Horizonte</th>
+          <th>Lectura de Jev</th>
+          <th>Magnitud y evidencia</th>
+          <th>Guardar</th>
+        </tr>
+      </thead>
+      <tbody id="prediction-rows">
+        <tr><td colspan="5">Sin predicciones todavía.</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <div id="prediction-last-updated" class="accuracy-text"></div>
+
+    <details class="collapsible">
+      <summary>Qué es esto y cómo leerlo (click para abrir/cerrar)</summary>
+      <div class="disclaimer">
+        No es una señal de trading. JEV clasifica el estado reciente del mercado,
+        no predice el futuro con certeza real. Cada predicción queda registrada y,
+        al cumplirse el horizonte, se compara contra el precio real — así se puede
+        medir su tasa de acierto real por mercado y por horizonte, en vez de
+        asumir que es confiable.
+      </div>
+      <div class="info-block">
+        <strong>Cómo funcionan los combos y el botón</strong>
+        <ul>
+          <li>Los combos (mercado / horizonte) solo <strong>filtran</strong> lo que ves en la tabla.</li>
+          <li>"Predecir los 7 mercados" ignora el filtro: siempre consulta y guarda los 7 mercados en los 4 horizontes (1h, 4h, 24h y 7d) de una vez, en una sola llamada a JEV (28 predicciones).</li>
+          <li>"Todos los horizontes" solo se puede elegir como filtro con un mercado específico ya seleccionado (máx. 4 filas). Con "Todos los mercados", el horizonte tiene que ser uno específico (máx. 7 filas).</li>
+        </ul>
+      </div>
+      <div class="info-block legend">
+        <strong>Cómo leer las columnas</strong>
+        <ul>
+          <li><strong>Lectura de Jev:</strong> muestra el precio de referencia, la fecha objetivo y la probabilidad estimada. «Igual o por debajo» es el complemento de «sube»; no distingue entre caída y precio sin cambio. Entre 40 % y 60 % de probabilidad de subida se marca incertidumbre.</li>
+          <li><strong>Magnitud estimada:</strong> la banda de tamaño de movimiento que JEV eligió entre 5 opciones que le dimos (ej. "Sube leve" = alza entre 0.7% y 2.0%) — no un porcentaje exacto, es una clasificación.</li>
+          <li><strong>conf. X%:</strong> qué tan segura está JEV de esa clasificación de magnitud, no la probabilidad de que el movimiento ocurra. Confianza alta con un mercado casi plano puede ser señal de desconfiar del resultado.</li>
+        </ul>
+      </div>
+    </details>
+  </section>
+
+  <section>
+    <h2>3. Seguimiento — predicción frente a resultado</h2>
+    <p>Resultados de las filas que guardaste. La muestra es seleccionada y puede incluir registros antiguos; no demuestra por sí sola la fiabilidad futura de Jev.</p>
+    <details class="collapsible">
+      <summary>Qué es esta tabla (click para abrir/cerrar)</summary>
+      <div class="info-block">
+        <strong>De dónde salen estos datos</strong>
+        <ul>
+          <li>Vive en su propio archivo (<code>tracking.json</code>), totalmente aparte de <code>predictions.json</code> — no lee ni depende de la tabla de arriba para nada.</li>
+          <li>Cada vez que pulsas <strong>"Guardar"</strong> se agrega una fila. Si la borras, también deja de participar en estas estadísticas.</li>
+          <li>"Predecir los 7 mercados" solo actualiza la tabla de arriba — no agrega nada acá.</li>
+        </ul>
+      </div>
+      <div class="info-block">
+        <strong>Para qué sirve</strong>
+        <p>
+          Muestra los mismos datos que exporta "Descargar CSV", incluida la
+          verificación contra el precio real una vez que se cumple el
+          horizonte — para ver si la predicción de JEV está funcionando o no
+          en el tiempo.
+        </p>
+      </div>
+    </details>
+    <p><button class="btn" id="history-refresh-btn" type="button">Actualizar seguimiento</button></p>
+    <div id="accuracy" class="accuracy-text"></div>
+    <div class="table-wrap">
+    <table class="history-table">
+      <thead>
+        <tr>
+          <th>Mercado</th>
+          <th>Creada<br>Resuelve</th>
+          <th>Horizonte / Precio predicción (estimado)</th>
+          <th>Resultado</th>
+          <th>Borrar</th>
+        </tr>
+      </thead>
+      <tbody id="history-rows">
+        <tr><td colspan="5">Sin datos todavía.</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </section>
+
+<script>
+  function variationBadge(value) {
+    if (value === null || value === undefined) {
+      return `<span class="badge pending" title="Sin trades suficientes en esa ventana">sin datos</span>`;
+    }
+    const pct = (value * 100).toFixed(2) + "%";
+    const cls = value > 0 ? "up" : value < 0 ? "down" : "neutral";
+    const sign = value > 0 ? "+" : "";
+    return `<span class="badge ${cls}">${sign}${pct}</span>`;
+  }
+
+  let loading = false;
+  let lastSuccess = null;
+  let failed = false;
+  let timer;
+  let nextRefreshAt = null;
+  const escapeHTML = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+  // Igual que en la tabla de predicciones: resalta momentáneamente la celda
+  // cuyo valor cambió respecto a la consulta anterior, para que se note que
+  // "Actualizar" (o el refresco automático) sí trajo datos nuevos.
+  const MARKET_FIELDS = ["last_price", "price_variation_1h", "price_variation_4h", "price_variation_24h", "price_variation_7d", "volume"];
+  let previousMarketValues = {};
+  function marketFlashClasses(m) {
+    const prev = previousMarketValues[m.market_id];
+    if (!prev) return MARKET_FIELDS.reduce((acc, f) => ({ ...acc, [f]: "" }), {});
+    return MARKET_FIELDS.reduce((acc, f) => ({ ...acc, [f]: prev[f] !== m[f] ? " flash" : "" }), {});
+  }
+
+  async function loadMarkets() {
+    if (loading) return;
+    loading = true;
+    clearTimeout(timer);
+    document.getElementById('refresh').disabled = true;
+    const rowsEl = document.getElementById("rows");
+    const statusEl = document.getElementById("status");
+    try {
+      const res = await fetch("/api/markets", { signal: AbortSignal.timeout(20000), cache: 'no-store' });
+      const data = await res.json();
+      if (!Array.isArray(data.markets) || !Array.isArray(data.errors)) throw new Error('Respuesta inesperada');
+      rowsEl.innerHTML = data.markets.map(m => {
+        const f = marketFlashClasses(m);
+        return `
+        <tr>
+          <td>${escapeHTML(m.market_id)}</td>
+          <td class="${f.last_price.trim()}">${m.last_price.toLocaleString("es-CL")} ${escapeHTML(m.quote_currency)}</td>
+          <td class="${f.price_variation_1h.trim()}">${variationBadge(m.price_variation_1h)}</td>
+          <td class="${f.price_variation_4h.trim()}">${variationBadge(m.price_variation_4h)}</td>
+          <td class="${f.price_variation_24h.trim()}">${variationBadge(m.price_variation_24h)}</td>
+          <td class="${f.price_variation_7d.trim()}">${variationBadge(m.price_variation_7d)}</td>
+          <td class="${f.volume.trim()}">${m.volume.toLocaleString('es-CL', {maximumFractionDigits: 8})} ${escapeHTML(m.base_currency)}</td>
+        </tr>`;
+      }).join("") + data.errors.map(e => `<tr><td>${escapeHTML(e.market_id)}</td><td colspan="6"><span class="badge pending">${escapeHTML(e.message)}</span></td></tr>`).join('');
+      previousMarketValues = Object.fromEntries(data.markets.map(m => [m.market_id, m]));
+      document.getElementById('metric-markets').textContent = `${data.markets.length} / 7`;
+      document.getElementById('metric-market-note').textContent = data.errors.length ? 'Hay mercados sin datos' : 'Datos públicos · importes en CLP';
+      failed = !res.ok || data.errors.length > 0;
+      lastSuccess = Date.parse(data.fetched_at);
+      statusEl.className = failed ? 'warning' : '';
+      statusEl.textContent = `Consulta: ${new Date(lastSuccess).toLocaleTimeString('es-CL')} · ${data.markets.length}/7 mercados disponibles${failed ? ' · Hay datos no disponibles' : ''}`;
+    } catch (err) {
+      failed = true;
+      document.getElementById('metric-market-note').textContent = 'Error de actualización · valores anteriores';
+      statusEl.className = 'warning';
+      statusEl.textContent = `No se pudo actualizar: ${err.message}. Los valores anteriores, si existen, no están actualizados.`;
+      if (!lastSuccess) rowsEl.innerHTML = '<tr><td colspan="7">Datos no disponibles. Puedes reintentar.</td></tr>';
+    } finally {
+      loading = false;
+      document.getElementById('refresh').disabled = false;
+      nextRefreshAt = Date.now() + 15000;
+      timer = setTimeout(loadMarkets, 15000);
+    }
+  }
+
+  function probabilityBadge(p) {
+    const pct = (p * 100).toFixed(1) + "%";
+    const cls = p >= 0.6 ? "up" : p <= 0.4 ? "down" : "neutral";
+    return `<span class="badge ${cls}">${pct}</span>`;
+  }
+
+  const horizonLabel = { "1h": "1h", "4h": "4h", "24h": "24h", "7d": "7d" };
+  let lastPredictions = [];
+
+  // Para resaltar momentáneamente qué valor cambió respecto a la carga
+  // anterior de /api/predictions (no respecto al filtro, que no vuelve a
+  // pedir datos). Se compara por mercado+horizonte, así una fila que no
+  // cambió no se resalta aunque otras sí.
+  const predKey = p => `${p.market_id}|${p.horizon}`;
+  let previousValues = {};
+  let changedProb = new Set();
+  let changedMag = new Set();
+  function computeChanges(predictionsList) {
+    changedProb = new Set();
+    changedMag = new Set();
+    const nextValues = {};
+    predictionsList.forEach(p => {
+      const key = predKey(p);
+      nextValues[key] = { probability_up: p.probability_up, magnitude_label: p.magnitude_label };
+      const prev = previousValues[key];
+      if (prev) {
+        if (prev.probability_up !== p.probability_up) changedProb.add(key);
+        if (prev.magnitude_label !== p.magnitude_label) changedMag.add(key);
+      }
+    });
+    previousValues = nextValues;
+  }
+
+  // Cada llamada real a JEV (preview de una, o cada mercado en un refresh
+  // masivo) suma acá. Se reinicia al recargar la página — es solo para que
+  // quede a la vista cuánto se está gastando en esta sesión, no un total
+  // histórico (ese viviría del lado de la cuenta de TypeSafe).
+  let jevCallCount = 0;
+  function addJevCalls(n) {
+    jevCallCount += n;
+    document.getElementById("jev-counter").textContent = `· Llamadas a JEV esta sesión: ${jevCallCount}`;
+  }
+
+  function relativeTime(isoString) {
+    const diffMs = Date.now() - new Date(isoString).getTime();
+    const minutes = Math.round(diffMs / 60000);
+    if (minutes < 1) return "recién";
+    if (minutes < 60) return `hace ${minutes} min`;
+    const hours = Math.round(minutes / 60);
+    if (hours < 24) return `hace ${hours} h`;
+    return `hace ${Math.round(hours / 24)} d`;
+  }
+
+  // Cuenta regresiva hasta que se pueda verificar la predicción (resolves_at).
+  // Es aproximada del lado del navegador — la resolución real la hace el
+  // backend cuando corresponde, esto es solo para saber cuánto falta.
+  function timeUntil(isoString) {
+    const diffMs = new Date(isoString).getTime() - Date.now();
+    if (diffMs <= 0) return "resolviendo…";
+    const minutes = Math.round(diffMs / 60000);
+    if (minutes < 60) return `faltan ${minutes} min`;
+    const hours = Math.round(minutes / 60);
+    if (hours < 24) return `faltan ${hours} h`;
+    return `faltan ${Math.round(hours / 24)} d`;
+  }
+
+  function statusBadge(p) {
+    if (!p.resolved) {
+      return `<span class="badge pending">pendiente</span>` +
+        `<div class="row-meta">${timeUntil(p.resolves_at)}</div>`;
+    }
+    const badge = p.correct
+      ? `<span class="badge resolved-ok">acertó (${escapeHTML(p.actual_direction)})</span>`
+      : `<span class="badge resolved-fail">falló (${escapeHTML(p.actual_direction)})</span>`;
+    // El valor y % en que quedó, acá mismo en Resultado, para no tener que
+    // cruzar con la columna de precio.
+    const changeClass = p.actual_change_pct > 0 ? "up" : p.actual_change_pct < 0 ? "down" : "neutral";
+    const detail = `<div class="row-meta">quedó en ${formatCLP(p.price_at_resolution)} ` +
+      `(<span class="${changeClass}">${p.actual_change_pct > 0 ? "+" : ""}${p.actual_change_pct}%</span>)</div>`;
+    return badge + detail;
+  }
+
+  // Formato corto (dd/mm hh:mm, 24h) para que quepa en una sola línea por
+  // fecha — el formato largo por defecto (con "a. m./p. m.") se cortaba a
+  // la mitad dentro de la columna angosta.
+  const formatDate = isoString => {
+    const d = new Date(isoString);
+    const pad = n => String(n).padStart(2, "0");
+    return `${pad(d.getDate())}/${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+  const formatCLP = value => value.toLocaleString("es-CL", { maximumFractionDigits: 2 });
+
+  // Mismos límites de banda que le dimos a JEV en el backend (predictions.py
+  // MAGNITUDE_BANDS) — sirven para traducir la banda que JEV ya eligió
+  // ("Sube leve", etc.) a un rango de precio, sin inventar un número que JEV
+  // no dijo: es la misma clasificación, solo en pesos en vez de %.
+  const MAGNITUDE_PCT_BOUNDS = {
+    "1h": { low: 0.7, high: 2.0 },
+    "4h": { low: 1.5, high: 4.0 },
+    "24h": { low: 3.0, high: 8.0 },
+    "7d": { low: 7.0, high: 20.0 },
+  };
+  function estimatedPriceRange(priceAtPrediction, horizon, magnitudeLabel) {
+    const bounds = MAGNITUDE_PCT_BOUNDS[horizon];
+    if (!bounds || !magnitudeLabel) return null;
+    const at = pct => formatCLP(priceAtPrediction * (1 + pct / 100));
+    switch (magnitudeLabel) {
+      case "Baja fuerte": return `&lt; ${at(-bounds.high)}`;
+      case "Baja leve": return `${at(-bounds.high)} – ${at(-bounds.low)}`;
+      case "Estable": return `${at(-bounds.low)} – ${at(bounds.low)}`;
+      case "Sube leve": return `${at(bounds.low)} – ${at(bounds.high)}`;
+      case "Sube fuerte": return `&gt; ${at(bounds.high)}`;
+      default: return null;
+    }
+  }
+
+  // Tabla espejo del CSV: TODO lo que hay guardado ahora mismo (no solo lo
+  // que pasa el filtro de arriba), con lo que se necesita para saber si la
+  // predicción de JEV está funcionando: predijo vs. lo que pasó realmente.
+  function historyRowHTML(p) {
+    const dates = `<span class="dates-cell">${formatDate(p.created_at)}<br>${formatDate(p.resolves_at)}</span>`;
+    const estimate = estimatedPriceRange(p.price_at_prediction, p.horizon, p.magnitude_label);
+    // Esta columna es la ESTIMACIÓN original (lo que se predijo antes de
+    // saber el resultado) y no cambia cuando se resuelve — el resultado real
+    // (precio final y % de cambio) vive en la columna "Resultado", no acá.
+    const priceLine = `${formatCLP(p.price_at_prediction)}` + (estimate
+      ? ` <span title="Rango estimado según la banda de magnitud que eligió JEV — no es el precio real">(est. ${estimate})</span>`
+      : "");
+    // La banda de magnitud (misma clasificación que arriba) queda como texto
+    // simple debajo, no como pastilla — así no se ve apretada dentro de la
+    // celda y se entiende de dónde sale el rango estimado.
+    const magDirection = p.magnitude_label && p.magnitude_label.startsWith("Sube") ? "up"
+      : p.magnitude_label && p.magnitude_label.startsWith("Baja") ? "down" : null;
+    const magConf = p.magnitude_confidence !== null && p.magnitude_confidence !== undefined
+      ? ` · conf. ${(p.magnitude_confidence * 100).toFixed(0)}%` : "";
+    // "will_rise" (dirección) y "magnitude" (banda) son DOS preguntas
+    // independientes que le hacemos a JEV en la misma llamada — nada obliga
+    // a que coincidan entre sí. Si probability_up dice "sube" pero la banda
+    // de magnitud es "Baja", eso es JEV contradiciéndose a sí mismo, no un
+    // error nuestro — lo marcamos en vez de ocultarlo.
+    const probDirection = p.predicted_direction === "up" ? "up" : "down";
+    const conflicting = magDirection !== null && magDirection !== probDirection;
+    const magnitudeLine = p.magnitude_label
+      ? `<span class="magnitude-line">` +
+        (conflicting ? `<span class="conflict-flag" title="La dirección (Prob. sube) y la banda de magnitud apuntan a lados distintos — son dos preguntas independientes que le hicimos a JEV, esto es JEV contradiciéndose, no un error del panel">⚠ señales mixtas · </span>` : "") +
+        `<span class="${magDirection || ""}">${escapeHTML(p.magnitude_label)}</span> ` +
+        `(${escapeHTML(p.magnitude_range || "")})${magConf}</span>`
+      : "";
+    const horizonTag = `<span class="badge neutral">${escapeHTML(horizonLabel[p.horizon] || p.horizon)}</span> `;
+    const prices = `${horizonTag}<span class="price-line">${priceLine}</span>${magnitudeLine}`;
+    const market = `${escapeHTML(p.market_id)}<div class="row-meta">${probabilityBadge(p.probability_up)}</div>`;
+    return `
+      <tr>
+        <td>${market}</td>
+        <td>${dates}</td>
+        <td>${prices}</td>
+        <td>${statusBadge(p)}</td>
+        <td>
+          <button class="save-inline delete-btn" type="button"
+            data-id="${p.id}">Borrar</button>
+        </td>
+      </tr>`;
+  }
+
+  let lastHistory = [];
+  // Orden por Resultado: pendiente primero, después acertó, después falló
+  // — dentro de cada grupo se mantiene el orden por fecha (más nueva primero)
+  // que ya viene del backend.
+  function resultPriority(p) {
+    if (!p.resolved) return 0;
+    return p.correct ? 1 : 2;
+  }
+
+  function renderHistoryRows() {
+    const rowsEl = document.getElementById("history-rows");
+    const sorted = [...lastHistory].sort((a, b) => resultPriority(a) - resultPriority(b));
+    rowsEl.innerHTML = sorted.length
+      ? sorted.map(historyRowHTML).join("")
+      : '<tr><td colspan="5">Sin datos todavía.</td></tr>';
+    rowsEl.querySelectorAll(".delete-btn").forEach(btn => {
+      btn.addEventListener("click", () => deleteHistoryRow(btn.dataset.id, btn));
+    });
+  }
+
+  async function deleteHistoryRow(id, btn) {
+    if (!confirm("¿Borrar esta fila del historial de seguimiento? No se puede deshacer.")) return;
+    btn.disabled = true;
+    btn.textContent = "…";
+    try {
+      const res = await fetch(`/api/predictions/tracking/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.detail || `HTTP ${res.status}`);
+      }
+      await loadHistory();
+    } catch (err) {
+      btn.textContent = "Error";
+      btn.title = err.message;
+      setTimeout(() => { btn.textContent = "Borrar"; btn.disabled = false; btn.title = ""; }, 2500);
+    }
+  }
+
+  // Banda tal como la eligió JEV (primitivo Score) — no inventamos un
+  // porcentaje puntual, solo mostramos la etiqueta y el rango que JEV
+  // seleccionó entre las opciones que le dimos, más su confianza.
+  function magnitudeBadge(p) {
+    if (!p.magnitude_label) {
+      return `<span class="badge pending">sin dato</span>`;
+    }
+    const cls = p.magnitude_label.startsWith("Sube") ? "up"
+      : p.magnitude_label.startsWith("Baja") ? "down" : "neutral";
+    const conf = p.magnitude_confidence !== null && p.magnitude_confidence !== undefined
+      ? ` · conf. ${(p.magnitude_confidence * 100).toFixed(0)}%` : "";
+    return `<span class="badge ${cls}">${escapeHTML(p.magnitude_label)} ` +
+      `(${escapeHTML(p.magnitude_range || "")})${conf}</span>`;
+  }
+
+  // La dirección (sube/baja) ya se lee por el color de "Prob. sube" y
+  // "Magnitud estimada". Fecha de creación y de resolución se siguen
+  // guardando en el registro (CSV/JSON) pero no ocupan columna acá — son
+  // datos de seguimiento, no algo que haga falta mirar a cada rato.
+  // El botón "Guardar" solo vuelve a persistir la fila tal cual está (no
+  // llama a JEV) — ver saveExistingRow.
+  function predictionRowHTML(p) {
+    const key = predKey(p);
+    const probClass = changedProb.has(key) ? ' class="flash"' : "";
+    const magClass = changedMag.has(key) ? ' class="flash"' : "";
+    const expired = Date.parse(p.resolves_at) <= Date.now();
+    const up = p.probability_up;
+    const uncertain = up >= .4 && up <= .6;
+    const direction = up >= .5 ? 'por encima' : 'igual o por debajo';
+    const probability = up >= .5 ? up : 1-up;
+    const cls = expired || uncertain ? 'pending' : up >= .5 ? 'up' : 'down';
+    const sentence = `Jev estima ${direction} de $${formatCLP(p.price_at_prediction)} CLP`;
+    return `
+      <tr>
+        <td>${escapeHTML(p.market_id)}</td>
+        <td>${escapeHTML(horizonLabel[p.horizon] || p.horizon)}</td>
+        <td class="prediction-sentence${changedProb.has(key) ? ' flash' : ''}"><span class="badge ${cls}">${expired ? 'Plazo vencido' : uncertain ? 'Sin dirección clara' : up >= .5 ? 'Sesgo alcista' : 'Sesgo no alcista'}</span><div>${sentence}</div><strong>${(probability*100).toFixed(1)} % estimado</strong><small>Objetivo: ${formatDate(p.resolves_at)} · ${escapeHTML(horizonLabel[p.horizon] || p.horizon)}<br>Emitida: ${formatDate(p.created_at)}</small></td>
+        <td${magClass}>${magnitudeBadge(p)}${reliabilityHTML(p)}</td>
+        <td>
+          <button class="save-inline refresh-btn" type="button"
+            ${expired ? 'disabled title="Genera una nueva predicción; este plazo ya venció"' : ''} data-market="${escapeHTML(p.market_id)}" data-horizon="${escapeHTML(p.horizon)}">${expired ? 'Vencida' : 'Guardar'}</button>
+        </td>
+      </tr>`;
+  }
+
+  // El backend garantiza una sola fila guardada por mercado + horizonte
+  // (guardar de nuevo reemplaza la anterior, no la acumula). Acá solo se
+  // filtra lo que ya está guardado — ninguna llamada a JEV se dispara desde
+  // acá, salvo que presiones un botón "Predecir"/"Guardar".
+  function renderPredictionRows() {
+    const active = lastPredictions.filter(p => Date.parse(p.resolves_at)>Date.now()).length;
+    document.getElementById('metric-active').textContent = active;
+    document.getElementById('metric-active-note').textContent = `${lastPredictions.length-active} vencidas · ${lastPredictions.length} registros disponibles`;
+    document.getElementById('next-step').textContent = active ? 'Revisa la lectura y su fecha objetivo. Guarda las predicciones que quieras seguir; sus resultados aparecerán en la sección 3.' : 'No hay predicciones con plazo vigente. Pulsa «Predecir los 7 mercados» en la sección 2 para generar estimaciones nuevas. Actualizar precios no consulta a Jev.';
+    const rowsEl = document.getElementById("prediction-rows");
+    const marketFilter = document.getElementById("market-select").value;
+    const horizonFilter = document.getElementById("horizon-select").value;
+    const filtered = lastPredictions.filter(p =>
+      (!marketFilter || p.market_id === marketFilter) &&
+      (!horizonFilter || p.horizon === horizonFilter)
+    );
+    rowsEl.innerHTML = filtered.length
+      ? filtered.map(predictionRowHTML).join("")
+      : (lastPredictions.length
+          ? '<tr><td colspan="5">Ninguna predicción guardada coincide con el filtro.</td></tr>'
+          : '<tr><td colspan="5">Sin predicciones todavía. Usa "Predecir los 7 mercados".</td></tr>');
+
+    // Como "Predecir los 7 mercados" guarda todo junto (mismo created_at
+    // para las 7), mostrar "actualizada hace X" en cada fila era redundante
+    // — una sola vez al pie de la tabla alcanza.
+    const lastUpdatedEl = document.getElementById("prediction-last-updated");
+    lastUpdatedEl.textContent = filtered.length
+      ? `Predicciones mostradas actualizadas ${relativeTime(filtered.reduce((latest, p) => p.created_at > latest ? p.created_at : latest, filtered[0].created_at))}.`
+      : "";
+
+    rowsEl.querySelectorAll(".refresh-btn").forEach(btn => {
+      btn.addEventListener("click", () => saveExistingRow(btn.dataset.market, btn.dataset.horizon, btn));
+    });
+  }
+
+  function reliabilityHTML(p) {
+    const r = p.reliability;
+    if (!r) return '<div class="row-meta">Fiabilidad todavía no evaluada</div>';
+    const interval = r.wilson_95 ? `${(r.wilson_95[0]*100).toFixed(0)}–${(r.wilson_95[1]*100).toFixed(0)} %` : 'sin muestra';
+    const accuracy = r.accuracy == null ? '—' : `${(r.accuracy*100).toFixed(1)} %`;
+    const baseline = r.baseline_accuracy == null ? '—' : `${(r.baseline_accuracy*100).toFixed(1)} % (${r.baseline_count} casos)`;
+    return `<div class="row-meta"><span class="badge pending">${r.count<30?'Evidencia insuficiente':'Experimental · muestra manual'}</span></div>
+      <details style="text-align:left;max-width:340px;white-space:normal"><summary>Fiabilidad: ${r.count} casos comparables</summary>
+      <p>${r.reasons.map(escapeHTML).join('<br>')}</p><p>Acierto observado: ${accuracy}<br>Intervalo descriptivo 95 %: ${interval}<br>Regla de tendencia 1h: ${baseline}<br>Brier: ${r.brier==null?'—':r.brier.toFixed(3)}</p>
+      <p>Solo guardados manualmente, sin ventanas solapadas, del mismo mercado, horizonte, modelo y contexto. No es una garantía ni validación general.</p>
+      <details><summary>Datos resumidos enviados a Jev</summary><pre style="white-space:pre-wrap;overflow-wrap:anywhere">${escapeHTML(JSON.stringify(p.market_context||{estado:'Registro anterior sin contexto'},null,2))}</pre></details>
+      <details><summary>Calibración de probabilidad de subida</summary><pre style="white-space:pre-wrap">${escapeHTML(JSON.stringify(r.calibration,null,2))}</pre></details></details>`;
+  }
+
+  // "Guardar" NO le pregunta nada nuevo a JEV — solo vuelve a persistir la
+  // fila tal como está mostrada ahora mismo (la que ya devolvió /api/predictions).
+  // La única forma de conseguir una señal nueva en esta tabla es "Predecir
+  // los 7 mercados"; este botón no dispara ninguna llamada a JEV.
+  async function saveExistingRow(marketId, horizon, btn) {
+    const record = lastPredictions.find(p => p.market_id === marketId && p.horizon === horizon);
+    if (!record) return;
+    const originalLabel = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = "…";
+    try {
+      const saveRes = await fetch("/api/predictions/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(record),
+      });
+      const saveData = await saveRes.json();
+      if (!saveRes.ok) throw new Error(saveData.detail || `HTTP ${saveRes.status}`);
+      const pct = (saveData.probability_up * 100).toFixed(0);
+      btn.textContent = `✓ ${pct}% · ${saveData.magnitude_label}`;
+      btn.title = `Guardado: ${pct}% prob. sube · ${saveData.magnitude_label} (${saveData.magnitude_range})`;
+      await new Promise(resolve => setTimeout(resolve, 1400));
+      // Refresca las dos tablas: la de arriba (predictions.json) y
+      // Seguimiento (tracking.json) — siguen siendo archivos independientes,
+      // pero acá sí queremos que la fila nueva se vea al toque en las dos.
+      await Promise.all([loadPredictions(), loadHistory()]);
+    } catch (err) {
+      btn.textContent = "Error";
+      btn.title = err.message;
+      setTimeout(() => { btn.textContent = originalLabel; btn.disabled = false; btn.title = ""; }, 2500);
+    }
+  }
+
+  // Solo la tabla de arriba (activas). No toca ni lee nada de seguimiento —
+  // esa parte vive en loadHistory(), completamente aparte.
+  async function loadPredictions() {
+    try {
+      const res = await fetch("/api/predictions", { cache: "no-store" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
+      computeChanges(data.predictions);
+      lastPredictions = data.predictions;
+      renderPredictionRows();
+    } catch (err) {
+      const statusEl = document.getElementById("prediction-last-updated");
+      statusEl.textContent = `No se pudieron cargar las predicciones: ${err.message}`;
+      document.getElementById('metric-active-note').textContent = 'No se pudo actualizar · datos anteriores';
+      document.getElementById('next-step').textContent = 'No se pudo consultar Jev guardado. Revisa el estado de conexión antes de interpretar los registros anteriores.';
+    }
+  }
+
+  // Solo la tabla de Seguimiento + resumen de tasa de acierto. Es su propio
+  // fetch, su propio timer y su propio botón — predecir/guardar arriba no la
+  // dispara, y borrar acá no toca la tabla de arriba.
+  async function loadHistory() {
+    const accEl = document.getElementById("accuracy");
+    try {
+      const res = await fetch("/api/predictions/history", { cache: "no-store" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
+      lastHistory = data.history || [];
+      renderHistoryRows();
+      const { resolved, correct, accuracy, by_horizon } = data.summary;
+      document.getElementById('metric-accuracy').textContent = resolved ? `${(accuracy*100).toFixed(1)} %` : 'Sin evaluar';
+      document.getElementById('metric-accuracy-note').textContent = `${correct} aciertos de ${resolved} evaluadas · muestra del seguimiento`;
+      const overall = resolved
+        ? `Track record general: ${correct}/${resolved} aciertos (${(accuracy * 100).toFixed(1)}%)`
+        : "Aún no hay predicciones resueltas para calcular una tasa de acierto.";
+      const perHorizon = Object.entries(by_horizon || {})
+        .filter(([, s]) => s.resolved > 0)
+        .map(([h, s]) => `  ${horizonLabel[h] || h}: ${s.correct}/${s.resolved} (${(s.accuracy * 100).toFixed(1)}%)`)
+        .join("\n");
+      accEl.textContent = overall + (perHorizon ? "\n" + perHorizon : "");
+    } catch (err) {
+      accEl.textContent = `No se pudo cargar el historial: ${err.message}`;
+      document.getElementById('metric-accuracy-note').textContent = 'No se pudo actualizar el seguimiento';
+    }
+  }
+
+  const marketSelectEl = document.getElementById("market-select");
+  const horizonSelectEl = document.getElementById("horizon-select");
+  const horizonAllOption = document.getElementById("horizon-all-option");
+  const refreshAllBtn = document.getElementById("refresh-all-btn");
+
+  // "Todos los horizontes" solo tiene sentido como FILTRO (máx. 4 filas)
+  // cuando hay un mercado específico elegido — si no, deshabilitado para no
+  // volver a mostrar hasta 28 filas mezcladas. Esto ya no afecta al botón de
+  // predecir: predice los 4 horizontes siempre, sin importar el filtro.
+  function syncHorizonOptions() {
+    const marketChosen = !!marketSelectEl.value;
+    horizonAllOption.disabled = !marketChosen;
+    if (!marketChosen && horizonSelectEl.value === "") {
+      horizonSelectEl.value = "1h";
+    }
+  }
+
+  // Un solo par de combos, ambos ahora son solo filtros de lo ya guardado.
+  marketSelectEl.addEventListener("change", () => {
+    syncHorizonOptions();
+    renderPredictionRows();
+  });
+  horizonSelectEl.addEventListener("change", () => {
+    syncHorizonOptions();
+    renderPredictionRows();
+  });
+  syncHorizonOptions();
+
+  // Un solo botón: predice Y guarda los 7 mercados en los 4 horizontes
+  // (1h/4h/24h/7d) en UNA sola llamada a JEV (todas las preguntas van en el
+  // mismo system_one, 7 mercados × 4 horizontes). Ya no depende del combo de
+  // horizonte — ese combo ahora es solo un filtro de la tabla. Solo corre
+  // cuando lo apretás.
+  refreshAllBtn.addEventListener("click", async () => {
+    const btn = refreshAllBtn;
+    const statusEl = document.getElementById("predict-status");
+    btn.disabled = true;
+    statusEl.textContent = `Consultando a JEV los 7 mercados en los 4 horizontes (1 llamada)…`;
+    try {
+      const res = await fetch(`/api/predictions/bulk/all`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
+      addJevCalls(1);
+      statusEl.textContent = `Listo: ${data.predictions.length}/28 actualizados` +
+        (data.errors.length ? ` · ${data.errors.length} con error` : "");
+      await Promise.all([loadPredictions(), loadHistory()]);
+    } catch (err) {
+      statusEl.textContent = `Error: ${err.message}`;
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  loadMarkets();
+  loadPredictions();
+  setInterval(loadPredictions, 30000);
+  document.getElementById('refresh').addEventListener('click', loadMarkets);
+
+  // Seguimiento: fetch, timer y botón propios — totalmente aparte del de
+  // arriba, así predecir/guardar no lo dispara y viceversa.
+  loadHistory();
+  setInterval(loadHistory, 30000);
+  document.getElementById('history-refresh-btn').addEventListener('click', loadHistory);
+
+  // Descarga vía fetch con cache:"no-store" en vez de un <a href> plano —
+  // así no depende de que el navegador respete el header Cache-Control, y
+  // el nombre del archivo lleva fecha/hora para no pisar ni reabrir una
+  // descarga vieja del mismo nombre.
+  document.getElementById('download-csv-btn').addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    btn.disabled = true;
+    try {
+      const res = await fetch('/api/predictions/export.csv', { cache: 'no-store' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `predictions_${stamp}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      alert(`No se pudo descargar el CSV: ${err.message}`);
+    } finally {
+      btn.disabled = false;
+    }
+  });
+  setInterval(() => {
+    if (lastSuccess && !failed && Date.now() - lastSuccess > 30000) {
+      const status = document.getElementById('status');
+      status.className = 'warning';
+      status.textContent = 'Han pasado más de 30 segundos desde la consulta. Pendiente de actualización.';
+    }
+  }, 1000);
+
+  // Cuenta regresiva hasta el próximo refresco automático (cada 15s). Usa
+  // nextRefreshAt (fijado del lado del cliente al programar el setTimeout)
+  // en vez de la hora del servidor, para que no se desfase.
+  setInterval(() => {
+    const nextEl = document.getElementById('next-refresh');
+    if (loading || !nextRefreshAt) {
+      nextEl.textContent = loading ? 'Actualizando…' : '';
+      return;
+    }
+    const secondsLeft = Math.max(0, Math.ceil((nextRefreshAt - Date.now()) / 1000));
+    nextEl.textContent = `Próxima actualización en ${secondsLeft}s`;
+  }, 1000);
+</script>
+</body>
+</html>

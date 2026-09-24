@@ -1,4 +1,6 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+El backend activo y su interfaz de pruebas están en **[backend](backend/README.md)**.
+Consulta ese documento para iniciar FastAPI, explorar la API y ejecutar pruebas.
+La plantilla Next.js de esta raíz se conserva como prototipo previo. Las instrucciones siguientes corresponden únicamente a esa plantilla.
 
 ## Getting Started
 

@@ -3,7 +3,14 @@
     "allow": [
       "WebFetch(domain:docs.typesafe.ai)",
       "WebFetch(domain:api.buda.com)",
-      "Bash(npx --yes create-next-app@latest . --typescript --app --eslint --no-tailwind --no-src-dir --import-alias \"@/*\" --use-npm)"
+      "Bash(npx --yes create-next-app@latest . --typescript --app --eslint --no-tailwind --no-src-dir --import-alias \"@/*\" --use-npm)",
+      "Bash(curl -s http://localhost:3000/)",
+      "Bash(openssl s_client -connect pypi.org:443 -servername pypi.org -showcerts)",
+      "Bash(awk '/BEGIN CERTIFICATE/,/END CERTIFICATE/')",
+      "Bash(export PIP_CERT=\"D:/M/IA/crypto_jev/backend/combined-ca.pem\")",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(echo \"EXIT CODE: $?\")",
+      "Bash(.venv/Scripts/python.exe -m pip install --quiet typesafe-sdk python-dotenv)"
     ]
   }
 }

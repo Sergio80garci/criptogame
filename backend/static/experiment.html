@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Crypto Quest · Próxima vela</title>
+<style>
+:root{color-scheme:dark}body{background:#101114;color:#f5f7fa;font:16px system-ui;margin:0;padding:32px;max-width:1250px;margin:auto}h1{font-size:28px}p{line-height:1.6}a{color:#bbf7d0}button{background:#252a32;color:white;border:1px solid #aab2bf;border-radius:8px;padding:12px;cursor:pointer}button:disabled{opacity:.5}section{background:#1c1f24;padding:20px;border-radius:12px;margin:20px 0}.warn{color:#facc15}.muted{color:#aab2bf}.up{color:#bbf7d0}.down{color:#fecaca}.scroll{overflow:auto}table{width:100%;border-collapse:collapse;white-space:nowrap}th,td{text-align:left;padding:12px;border-bottom:1px solid #42464f}pre{white-space:pre-wrap;overflow-wrap:anywhere}summary{cursor:pointer}
+</style>
+<h1>BTC/CLP · Próxima vela de 15 minutos</h1>
+<p>Alcista: cierre mayor que apertura. Bajista: cierre menor que apertura. Sin cambio: ambos iguales. Intervalos UTC; horas mostradas en tu zona local.</p>
+<p class="warn">Probabilidades experimentales, pendientes de validación. No existe garantía de 100 % de aciertos. Confianza del modelo y probabilidad de un resultado son valores diferentes.</p>
+<p><a href="/docs" target="_top">API</a> · <a href="/" target="_top">Panel principal de siete mercados</a> · <a href="/api/experiment">Exportar registro JSON</a></p>
+<section><button id="predict">Predecir y registrar próxima vela</button> <button id="refresh">Actualizar resultados</button>
+<p class="muted">Una consulta a Jev por vela, iniciada por ti. Guardado automático. Las evaluaciones continúan mientras el backend esté encendido; no requieren mantener esta página abierta.</p>
+<p id="status" role="status" aria-live="polite"></p></section>
+<section><h2>Evaluación acumulada</h2><p id="metrics">Sin datos todavía.</p><details><summary>Calibración por rangos de probabilidad</summary><pre id="calibration"></pre></details></section>
+<section><h2>Registro de decisiones</h2><div class="scroll"><table><thead><tr><th>Vela objetivo</th><th>Decisión</th><th>Alcista / bajista / igual</th><th>Resultado</th><th>Auditoría</th></tr></thead><tbody id="rows"></tbody></table></div></section>
+<script>
+const $=id=>document.getElementById(id);
+const names={up:'Alcista',down:'Bajista',flat:'Sin cambio'};
+const pct=v=>v==null?'—':(v*100).toFixed(1)+' %';
+const date=v=>new Date(v*1000).toLocaleString('es-CL');
+let busy=false;
+async function request(path,method='GET'){
+ const r=await fetch(path,{method,cache:'no-store',signal:AbortSignal.timeout(180000)});
+ const d=await r.json();if(!r.ok)throw Error(d.detail||'No se pudo consultar');return d;
+}
+async function load(){
+ const d=await request('/api/experiment'),s=d.summary;
+ $('metrics').textContent=`Intentos: ${s.attempts} · Predicciones: ${s.predictions} · Evaluadas: ${s.resolved} · No evaluables: ${s.not_evaluable} · Aciertos: ${pct(s.accuracy)} · Regla de referencia: ${pct(s.baseline_accuracy)} · Brier (menor es mejor, 0–2): ${s.brier==null?'—':s.brier.toFixed(3)}`;
+ $('calibration').textContent=JSON.stringify(s.calibration,null,2);
+ $('rows').replaceChildren();
+ for(const r of d.records){
+  const tr=document.createElement('tr'),p=r.prediction,res=r.result;
+  const outcome=res?.status==='resolved'?`${names[res.actual]} · ${res.correct?'Acertada':'Fallida'}`:res?.status==='not_evaluable'?'No evaluable':r.error?'Sin predicción':p?'Pendiente de evaluación':'Intento registrado sin respuesta';
+  for(const text of [`${date(r.target_start)} → ${date(r.target_end)}`,p?names[p.choice]:'—',p?['up','down','flat'].map(k=>pct(p.probabilities[k])).join(' / '):'—',outcome]){const td=document.createElement('td');td.textContent=text;tr.append(td)}
+  tr.children[3].className=res?.status==='resolved'?(res.correct?'up':'down'):'warn';
+  const td=document.createElement('td'),details=document.createElement('details'),summary=document.createElement('summary'),pre=document.createElement('pre');summary.textContent='Ver registro';pre.textContent=JSON.stringify(r,null,2);details.append(summary,pre);td.append(details);tr.append(td);$('rows').append(tr);
+ }
+ if(!d.records.length){const tr=document.createElement('tr'),td=document.createElement('td');td.colSpan=5;td.textContent='Aún no hay predicciones en este experimento.';tr.append(td);$('rows').append(tr)}
+}
+async function action(path){if(busy)return;busy=true;$('predict').disabled=$('refresh').disabled=true;$('status').textContent='Consultando…';try{const d=await request(path,'POST');await load();$('status').textContent=d.error?'Intento registrado sin predicción válida. Consulta su auditoría.':'Registro actualizado.'}catch(e){$('status').textContent=e.message}finally{busy=false;$('predict').disabled=$('refresh').disabled=false}}
+$('predict').onclick=()=>action('/api/experiment/predict');$('refresh').onclick=()=>action('/api/experiment/resolve');
+load().catch(e=>$('status').textContent=e.message);
+setInterval(()=>{if(!busy)load().catch(e=>$('status').textContent=e.message)},15000);
+</script></html>
